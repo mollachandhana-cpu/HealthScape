@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" th:href="@{/app.css}"><title>Field reports · HealthScape AI</title></head><body>
+<div th:replace="~{fragments :: nav}"></div>
+<div class="hero"><h1>Field observations</h1><p>Report what you see on the ground. Severity 3 opens an alert if the area has none open.</p></div>
+<main><p class="flash" th:if="${msg}" th:text="${msg}"></p>
+ <section class="card"><form class="tools" method="post" th:action="@{/official/observe}">
+  <select name="villageId" required><option th:each="v : ${areas}" th:value="${v.id}" th:text="${v.name}"></option></select>
+  <select name="kind"><option th:each="k : ${kinds}" th:value="${k}" th:text="${k}"></option></select>
+  <select name="severity"><option value="1">Severity 1 (minor)</option><option value="2">Severity 2 (notable)</option><option value="3">Severity 3 (severe)</option></select>
+  <input name="note" placeholder="What did you observe? (no personal details)" maxlength="500" style="min-width:300px"><button type="submit">Submit report</button></form></section>
+ <section class="card" style="overflow-x:auto"><table><thead><tr><th>When</th><th>Area</th><th>Type</th><th>Sev</th><th>Note</th><th>By</th></tr></thead><tbody>
+  <tr th:each="o : ${recent}"><td th:text="${o.createdAt}"></td><td th:text="${o.villageName}"></td><td th:text="${o.type}"></td><td th:text="${o.severity}"></td><td th:text="${o.note}"></td><td th:text="${o.author}"></td></tr></tbody></table></section>
+</main></body></html>

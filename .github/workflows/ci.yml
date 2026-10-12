@@ -1,0 +1,22 @@
+name: HealthScapeAI CI
+on:
+  push:
+  pull_request:
+jobs:
+  test-and-package:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Run tests
+        run: mvn --batch-mode clean test
+      - name: Package application
+        run: mvn --batch-mode -DskipTests package
+      - name: Validate Docker build
+        run: docker build --tag healthscapeai:ci .

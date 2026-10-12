@@ -1,0 +1,131 @@
+package com.healthscapeai;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.util.UriComponentsBuilder;
+
+import java.time.Instant;
+import java.util.*;
+
+/** Retrieves model-based environmental conditions from Open-Meteo. Values are forecasts/model estimates, not ground sensors. */
+@Service
+public class EnvironmentalIntelligenceService {
+    private final RestClient http = RestClient.builder().build();
+
+    public List<Map<String, Object>> searchLocations(String query) {
+        String q = query == null ? "" : query.trim();
+        if (q.length() < 2 || q.length() > 100) return List.of();
+        JsonNode root = http.get().uri(UriComponentsBuilder.fromUriString("https://geocoding-api.open-meteo.com/v1/search")
+                .queryParam("name", q).queryParam("count", 8).queryParam("language", "en").queryParam("format", "json").build().encode().toUri())
+                .retrieve().body(JsonNode.class);
+        List<Map<String, Object>> out = new ArrayList<>();
+        JsonNode results = root == null ? null : root.path("results");
+        if (results != null && results.isArray()) for (JsonNode n : results) {
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("name", n.path("name").asText()); item.put("admin1", n.path("admin1").asText(""));
+            item.put("country", n.path("country").asText("")); item.put("latitude", n.path("latitude").asDouble());
+            item.put("longitude", n.path("longitude").asDouble()); item.put("timezone", n.path("timezone").asText("auto"));
+            out.add(item);
+        }
+        return out;
+    }
+
+    public Map<String, Object> getIntelligence(double latitude, double longitude, String place) {
+        if (!Double.isFinite(latitude) || !Double.isFinite(longitude) || latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180)
+            throw new IllegalArgumentException("Latitude must be -90..90 and longitude -180..180.");
+        JsonNode weather = http.get().uri(UriComponentsBuilder.fromUriString("https://api.open-meteo.com/v1/forecast")
+                .queryParam("latitude", latitude).queryParam("longitude", longitude)
+                .queryParam("current", "temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,wind_speed_10m,wind_gusts_10m,uv_index,visibility,cloud_cover")
+                .queryParam("hourly", "temperature_2m,relative_humidity_2m,precipitation_probability,precipitation,uv_index,wind_speed_10m,wind_gusts_10m,visibility,cloud_cover")
+                .queryParam("forecast_days", 2).queryParam("timezone", "auto").build().encode().toUri())
+                .retrieve().body(JsonNode.class);
+        JsonNode air = http.get().uri(UriComponentsBuilder.fromUriString("https://air-quality-api.open-meteo.com/v1/air-quality")
+                .queryParam("latitude", latitude).queryParam("longitude", longitude)
+                .queryParam("current", "us_aqi,european_aqi,pm10,pm2_5,ozone,nitrogen_dioxide,sulphur_dioxide,carbon_monoxide,dust,grass_pollen,birch_pollen,ragweed_pollen")
+                .queryParam("hourly", "us_aqi,pm2_5,pm10,ozone,nitrogen_dioxide,carbon_monoxide,dust,grass_pollen,birch_pollen,ragweed_pollen").queryParam("forecast_days", 2)
+                .queryParam("timezone", "auto").build().encode().toUri()).retrieve().body(JsonNode.class);
+        if (weather == null || air == null) throw new IllegalStateException("Environmental data provider returned an empty response.");
+
+        JsonNode currentWeather = weather.path("current"), currentAir = air.path("current");
+        double aqi = num(currentAir, "us_aqi", -1), pm25 = num(currentAir, "pm2_5", -1), pm10 = num(currentAir, "pm10", -1);
+        double temp = num(currentWeather, "temperature_2m", -99), humidity = num(currentWeather, "relative_humidity_2m", -1);
+        double feels = num(currentWeather, "apparent_temperature", temp), uv = num(currentWeather, "uv_index", -1);
+        double precipitation = num(currentWeather, "precipitation", -1);
+        int currentHourIndex = findHourIndex(weather.path("hourly").path("time"), currentWeather.path("time").asText());
+        double rainChance = atNum(weather.path("hourly").path("precipitation_probability"), currentHourIndex);
+        double wind = num(currentWeather, "wind_speed_10m", -1);
+        double gust = num(currentWeather, "wind_gusts_10m", -1);
+        double visibility = num(currentWeather, "visibility", -1);
+        double dust = num(currentAir, "dust", -1);
+        double co = num(currentAir, "carbon_monoxide", -1);
+        List<Map<String, Object>> insights = buildInsights(aqi, pm25, temp, feels, humidity, uv, wind, gust, precipitation, rainChance, visibility, dust, co);
+        Map<String, Object> current = new LinkedHashMap<>();
+        current.put("time", currentWeather.path("time").asText(Instant.now().toString())); current.put("temperature", temp);
+        current.put("feelsLike", feels); current.put("humidity", humidity); current.put("precipitation", num(currentWeather,"precipitation",-1));
+        current.put("windSpeed", wind); current.put("windGusts", gust); current.put("uvIndex", uv);
+        current.put("precipitationProbability", rainChance); current.put("visibility", visibility); current.put("cloudCover", num(currentWeather,"cloud_cover",-1));
+        current.put("usAqi", aqi); current.put("europeanAqi", num(currentAir,"european_aqi",-1)); current.put("pm25",pm25);
+        current.put("pm10",pm10); current.put("ozone",num(currentAir,"ozone",-1)); current.put("nitrogenDioxide",num(currentAir,"nitrogen_dioxide",-1));
+        current.put("sulphurDioxide",num(currentAir,"sulphur_dioxide",-1));
+        current.put("carbonMonoxide",co); current.put("dust",dust);
+        current.put("grassPollen", num(currentAir, "grass_pollen", -1));
+        current.put("birchPollen", num(currentAir, "birch_pollen", -1));
+        current.put("ragweedPollen", num(currentAir, "ragweed_pollen", -1));
+
+        List<Map<String,Object>> hourly = new ArrayList<>();
+        JsonNode wt = weather.path("hourly").path("time"), at = air.path("hourly").path("time");
+        JsonNode temps = weather.path("hourly").path("temperature_2m"), hums = weather.path("hourly").path("relative_humidity_2m");
+        JsonNode uvh = weather.path("hourly").path("uv_index"), winds = weather.path("hourly").path("wind_speed_10m");
+        JsonNode rainChanceH = weather.path("hourly").path("precipitation_probability"), rainH = weather.path("hourly").path("precipitation");
+        JsonNode gustsH = weather.path("hourly").path("wind_gusts_10m"), visibilityH = weather.path("hourly").path("visibility");
+        JsonNode aqis = air.path("hourly").path("us_aqi"), pmh = air.path("hourly").path("pm2_5");
+        JsonNode dustH = air.path("hourly").path("dust"), grassH = air.path("hourly").path("grass_pollen");
+        int count = Math.min(24, Math.min(wt.size(), at.size()));
+        for (int i=0;i<count;i++) {
+            Map<String,Object> h = new LinkedHashMap<>(); h.put("time", wt.get(i).asText()); h.put("temperature", atNum(temps,i));
+            h.put("humidity",atNum(hums,i)); h.put("uvIndex",atNum(uvh,i)); h.put("windSpeed",atNum(winds,i));
+            h.put("windGusts",atNum(gustsH,i)); h.put("precipitationProbability",atNum(rainChanceH,i));
+            h.put("precipitation",atNum(rainH,i)); h.put("visibility",atNum(visibilityH,i));
+            h.put("dust",atNum(dustH,i)); h.put("grassPollen",atNum(grassH,i));
+            h.put("usAqi",atNum(aqis,i)); h.put("pm25",atNum(pmh,i)); hourly.add(h);
+        }
+        Map<String,Object> result = new LinkedHashMap<>();
+        result.put("place", place == null || place.isBlank() ? "Selected location" : place.trim());
+        result.put("latitude", latitude); result.put("longitude", longitude); result.put("timezone", weather.path("timezone").asText("local"));
+        result.put("updatedAt", Instant.now().toString()); result.put("provider", "Open-Meteo · weather models and CAMS air-quality forecasts");
+        result.put("current", current); result.put("hourly", hourly); result.put("insights", insights);
+        result.put("disclaimer", "Modelled conditions and forecasts are not readings from a nearby regulatory monitoring station. This is environmental information, not a medical diagnosis or an official public-health warning.");
+        return result;
+    }
+
+    private List<Map<String,Object>> buildInsights(double aqi,double pm25,double temp,double feels,double humidity,double uv,double wind,double gust,double precipitation,double rainChance,double visibility,double dust,double co) {
+        List<Map<String,Object>> list = new ArrayList<>();
+        if (aqi >= 0 && aqi >= 151) add(list,"air","High priority","Air quality is very unhealthy by the US AQI scale.","Reduce prolonged outdoor exertion. Sensitive people should consider staying indoors and follow local official guidance.","high");
+        else if (aqi >= 101) add(list,"air","Sensitive groups","Air quality may affect sensitive groups.","People with asthma or heart/lung conditions, children, and older adults should consider reducing prolonged outdoor exertion.","medium");
+        else if (aqi >= 0) add(list,"air","Air quality","Current modelled AQI is in a lower US AQI band.","Keep checking local conditions; a model estimate may differ from a nearby station.","low");
+        if (pm25 >= 35.5) add(list,"pm25","Fine particles elevated","PM2.5 is elevated in the current model estimate.","Reduce smoke and dust exposure where possible and keep windows closed when outdoor air is worse than indoor air.","high");
+        if (feels >= 40 || temp >= 38) add(list,"heat","Heat precautions","High heat or apparent temperature increases heat strain risk.","Hydrate, take breaks in shade or air-conditioning, and avoid strenuous activity during the hottest hours.","high");
+        else if (feels >= 33 || temp >= 35) add(list,"heat","Heat awareness","Warm conditions may increase heat stress during exertion.","Plan strenuous outdoor activity for cooler hours and drink water regularly.","medium");
+        if (uv >= 6) add(list,"uv","UV protection","UV index is high enough to warrant protection.","Seek shade, wear protective clothing and sunglasses, and use broad-spectrum sunscreen.","medium");
+        if (humidity >= 80 && temp >= 30) add(list,"humidity","Humid heat","Warm, humid conditions can make cooling harder.","Slow down during outdoor activity and watch for dizziness, weakness, or confusion.","medium");
+        if (rainChance >= 70 || precipitation >= 10) add(list,"rain","Heavy-rain watch","Forecast precipitation suggests a wet-weather disruption window.","Check official weather alerts, avoid waterlogged underpasses, and do not cross flowing floodwater.","medium");
+        if (gust >= 50 || wind >= 35) add(list,"wind","Strong-wind conditions","Forecast wind speeds or gusts are elevated.","Secure loose outdoor objects and use caution near trees, temporary structures, and exposed routes.","medium");
+        if (visibility >= 0 && visibility < 1000) add(list,"visibility","Low visibility","Modelled visibility is below one kilometre.","Allow extra travel time and follow local transport advisories.","medium");
+        if (dust >= 100) add(list,"dust","Elevated airborne dust","The model indicates elevated dust concentration.","Limit dust-generating activity and consider a well-fitted particulate respirator if exposure cannot be avoided.","medium");
+        if (co >= 10000) add(list,"gas","Carbon monoxide elevated","Modelled carbon monoxide concentration is elevated.","Move away from combustion sources and consult local air-quality guidance; this model is not a detector for indoor CO emergencies.","high");
+        if (list.isEmpty()) add(list,"check","Keep monitoring","No high-priority trigger was identified from the available values.","This does not mean there is no risk. Check local advisories and pay attention to how you feel.","low");
+        return list;
+    }
+    private void add(List<Map<String,Object>> l,String type,String title,String summary,String action,String severity) {
+        Map<String,Object> m = new LinkedHashMap<>(); m.put("type",type);m.put("title",title);m.put("summary",summary);m.put("action",action);m.put("severity",severity);l.add(m);
+    }
+    private int findHourIndex(JsonNode times, String currentTime) {
+        if (times == null || !times.isArray() || currentTime == null || currentTime.length() < 13) return 0;
+        String hour = currentTime.substring(0, 13);
+        for (int i = 0; i < times.size(); i++) if (times.get(i).asText().startsWith(hour)) return i;
+        return 0;
+    }
+    private double num(JsonNode n,String key,double fallback) { JsonNode v=n.path(key); return v.isNumber()?v.asDouble():fallback; }
+    private double atNum(JsonNode n,int i) { return n != null && n.size()>i && n.get(i).isNumber()?n.get(i).asDouble():-1; }
+}

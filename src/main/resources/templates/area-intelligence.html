@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f8fc">
+  <link rel="stylesheet" th:href="@{/app.css}"><link rel="stylesheet" th:href="@{/css/intelligence.css}">
+  <title>Area Intelligence · HealthScape AI</title>
+</head>
+<body>
+<header class="int-nav">
+  <a class="brand" th:href="@{/}"><span class="brand-mark">✳</span><span>HealthScape<span class="brand-light">AI</span><small>ENVIRONMENTAL HEALTH INTELLIGENCE</small></span></a>
+  <nav aria-label="Primary navigation"><a th:href="@{/}">Overview</a><a class="active" th:href="@{/area-intelligence}">Area intelligence</a><a th:href="@{/data-methodology}">Methodology</a><a th:href="@{/official/alerts}">Response workspace</a></nav>
+  <a class="nav-cta" th:href="@{/login}">Official sign in <span>↗</span></a>
+</header>
+<main class="intel-main">
+  <section class="intel-hero">
+    <div class="hero-copy"><div class="eyebrow"><span class="pulse-dot"></span> COMMUNITY HEALTH SIGNALS <span class="eyebrow-divider">/</span> PUBLIC VIEW</div>
+      <h1>Know your area.<br><em>Understand what comes next.</em></h1>
+      <p>Explore available local environmental and community evidence, understand what it may mean, and find practical next steps—without confusing a risk signal with a confirmed outbreak.</p>
+      <div class="hero-trust"><span>✓ Evidence and timestamps</span><span>✓ Clear next steps</span><span>✓ Uncertainty made visible</span></div>
+    </div>
+    <div class="hero-art" aria-hidden="true"><div class="orb orb-one"></div><div class="orb orb-two"></div><div class="art-grid"></div><div class="art-center"><span>HS</span><b>Area<br>signals</b></div><div class="art-pill pill-top"><i></i> Environment</div><div class="art-pill pill-bottom"><i></i> Community reports</div></div>
+  </section>
+
+  <section class="area-picker card">
+    <div class="picker-label"><span class="picker-icon">⌖</span><div><b>Choose your area</b><small>Select a locality to review its available evidence</small></div></div>
+    <form method="get" th:action="@{/area-intelligence}" class="picker-form"><label class="sr-only" for="areaId">Locality</label><select id="areaId" name="areaId" required><option th:each="a : ${areas}" th:value="${a.id}" th:selected="${selected != null and a.id == selected.id}" th:text="${a.name + ' · ' + a.zone}">Area</option></select><button type="submit">Explore area <span>→</span></button></form>
+  </section>
+
+  <section class="area-heading" th:if="${hasArea}"><div><div class="eyebrow">AREA BRIEFING</div><h2 th:text="${selected.name}">Selected area</h2><p th:text="${selected.zone + ' zone · Hyderabad, Telangana'}">Zone · City</p></div><div class="updated-chip"><span class="update-icon">◷</span><div><small>DATA STATUS</small><b th:text="${updatedLabel}">No verified update recorded</b></div></div></section>
+
+  <section class="status-banner" th:if="${hasArea and !fresh}"><span class="status-symbol">!</span><div><b>Risk status unavailable — local evidence needs refreshing</b><p>This area does not have a recent verified update. We will not present a risk category as current. Values in the underlying area record may be sample defaults or outdated.</p></div><a th:href="@{/data-methodology}">How data is assessed ↗</a></section>
+
+  <section class="overview-grid" th:if="${hasArea}">
+    <article class="risk-summary card">
+      <div class="card-eyebrow">CURRENT AREA SIGNAL <span class="info-dot" title="Rule-based demonstration score; not clinically validated">i</span></div>
+      <div class="risk-status-row"><div><div class="risk-word" th:classappend="${fresh ? assessment.level.toLowerCase() : 'unknown'}" th:text="${fresh ? assessment.level : 'Not assessed'}">Not assessed</div><p th:text="${fresh ? 'Rule-based screening indicator · not a diagnosis' : 'Waiting for recent verified observations'}">Waiting for data</p></div><div class="risk-score" th:if="${fresh}"><strong th:text="${assessment.score}">0</strong><small>/ 100</small></div><div class="score-placeholder" th:unless="${fresh}">—</div></div>
+      <div class="score-track"><span th:if="${fresh}" th:style="'width:' + ${assessment.score} + '%'"></span></div>
+      <div class="score-scale"><span>Lower signal</span><span>Higher signal</span></div>
+      <div class="summary-divider"></div>
+      <div class="summary-meta"><span>Open response items</span><b th:text="${openAlertCount}">0</b></div>
+      <div class="summary-meta"><span>Latest data source</span><b th:text="${source}">Not specified</b></div>
+      <div class="summary-meta"><span>Area update</span><b th:text="${updatedLabel}">No update</b></div>
+    </article>
+
+    <article class="why-card card">
+      <div class="card-title"><div><div class="card-eyebrow">01 / WHY THIS SIGNAL?</div><h3>What is contributing?</h3></div><span class="title-icon">⌁</span></div>
+      <p class="muted-intro" th:if="${fresh}">These are the strongest contributors in the current rule-based assessment. They are indicators to review—not proof that a hazard or outbreak is present.</p>
+      <p class="muted-intro" th:unless="${fresh}">Contributors will appear when recent area data is verified. We do not infer missing values from unrelated locations.</p>
+      <div class="factor-list" th:if="${fresh}"><div class="factor-row" th:each="f : ${factors}"><span class="factor-dot"></span><div class="factor-info"><b th:text="${f.feature}">Indicator</b><small>Contribution to demonstration score</small></div><div class="factor-meter"><span th:style="'width:' + ${T(java.lang.Math).min(100, f.impact * 5)} + '%' "></span></div><strong th:text="${f.impact}">0</strong></div></div>
+      <div class="empty-evidence" th:unless="${fresh}"><span>◷</span><b>Evidence not current</b><small>Ask an authorized field worker to verify this area's measurements and reports.</small></div>
+      <a class="inline-link" th:href="@{/data-methodology}">Read the scoring methodology <span>→</span></a>
+    </article>
+  </section>
+
+  <section class="next-grid" th:if="${hasArea}">
+    <article class="next-card resident-card"><div class="card-title"><div><div class="card-eyebrow">02 / FOR RESIDENTS</div><h3>What can I do now?</h3></div><span class="next-icon">♡</span></div>
+      <p class="muted-intro" th:if="${fresh}">General precautions selected from the leading indicators. Follow local public-health guidance for your situation.</p><p class="muted-intro" th:unless="${fresh}">Even without a current risk assessment, everyday prevention remains useful.</p>
+      <ul class="action-list" th:if="${fresh}"><li th:each="p : ${precautions}"><span class="checkmark">✓</span><span th:text="${p}">Practical action</span></li></ul>
+      <ul class="action-list" th:unless="${fresh}"><li><span class="checkmark">✓</span><span>Use safe drinking water and follow local water-quality advisories.</span></li><li><span class="checkmark">✓</span><span>Remove standing water where practical and keep water containers covered.</span></li><li><span class="checkmark">✓</span><span>Follow official weather and public-health guidance; seek professional care when unwell.</span></li></ul>
+      <div class="callout-note"><span>i</span><p>This page does not diagnose illness. In an emergency, contact local emergency services rather than relying on this website.</p></div>
+    </article>
+    <article class="next-card authority-card"><div class="card-title"><div><div class="card-eyebrow">03 / FOR HEALTH OFFICERS</div><h3>What should be verified?</h3></div><span class="next-icon">⌖</span></div>
+      <p class="muted-intro">A risk signal should lead to evidence review and accountable follow-up—not an automatic declaration of an outbreak.</p>
+      <ol class="authority-steps"><li><span>01</span><div><b>Validate the evidence</b><small>Check timestamps, source, missing values and the field measurement method.</small></div></li><li><span>02</span><div><b>Review community reports</b><small>Compare recent observations and confirm them with an authorized worker.</small></div></li><li><span>03</span><div><b>Record the response</b><small>Assign follow-up, acknowledge alerts and document resolution.</small></div></li></ol>
+      <a class="primary-link" th:href="@{/login}">Open official response workspace <span>↗</span></a>
+    </article>
+  </section>
+
+  <section class="evidence-section" th:if="${hasArea}"><div class="section-head"><div><div class="card-eyebrow">04 / EVIDENCE REGISTER</div><h3>What data is available?</h3><p>Missing or stale information is called out instead of being treated as zero.</p></div><span class="evidence-count" th:text="${evidence.size()} + ' indicators'">5 indicators</span></div>
+    <div class="evidence-grid"><article class="evidence-card" th:each="e : ${evidence}"><div class="evidence-top"><span class="evidence-icon">◈</span><span class="evidence-state" th:classappend="${e.available ? 'available' : 'missing'}" th:text="${e.available ? 'RECORDED' : 'STALE / UNVERIFIED'}">UNVERIFIED</span></div><b th:text="${e.label}">Indicator</b><strong th:text="${e.value}">Unavailable</strong><p th:text="${e.interpretation}">Interpretation</p></article></div>
+    <div class="evidence-foot"><span>ⓘ</span><p><b>Transparency note:</b> displayed stored values are not necessarily live sensor readings. The source and reporting period should be verified before operational decisions are made.</p></div>
+  </section>
+
+  <section class="reports-section" th:if="${hasArea}"><div class="section-head"><div><div class="card-eyebrow">05 / COMMUNITY SIGNALS</div><h3>Recent field observations</h3><p>Reports are observations that may require verification; they are not confirmed cases.</p></div><a class="inline-link" th:href="@{/login}">Authorized reporting ↗</a></div>
+    <div class="report-empty" th:if="${#lists.isEmpty(recentObservations)}"><span>◎</span><div><b>No recent observations recorded for this area</b><p>Absence of reports does not mean absence of risk. Verified community observations improve the evidence base.</p></div></div>
+    <div class="report-list" th:unless="${#lists.isEmpty(recentObservations)}"><article th:each="o : ${recentObservations}" class="report-row"><span class="report-mark">●</span><div><b th:text="${o.type}">Observation</b><p th:text="${o.note == null or #strings.isEmpty(o.note) ? 'No additional note supplied.' : o.note}">Note</p><small th:text="${o.severity + ' priority · reported by ' + o.author}">Moderate priority</small></div><time th:text="${#temporals.format(o.createdAt, 'dd MMM yyyy HH:mm')}">Date</time></article></div>
+  </section>
+  <footer class="intel-footer"><a th:href="@{/}">HealthScapeAI</a><span>Environmental signals → understandable guidance → accountable response</span><a th:href="@{/data-methodology}">Sources & limitations</a></footer>
+</main>
+</body></html>

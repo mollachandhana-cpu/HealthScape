@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Users · HealthScape AI</title><link rel="stylesheet" th:href="@{/app.css}"></head>
+<body>
+<nav><b>HealthScape AI · Users</b><span><a th:href="@{/official}">Dashboard</a><a th:href="@{/official/alerts}">Response</a>
+<form method="post" th:action="@{/logout}" style="display:inline"><button type="submit">Log out</button></form></span></nav>
+<main><div class="flash" th:if="${msg}" th:text="${msg}"></div>
+ <section class="card"><h2 style="margin-top:0">Create account</h2>
+  <p class="note">ADMIN manages users and assigns alerts. WORKER submits observations and updates alerts.</p>
+  <form class="row" method="post" th:action="@{/admin/users}">
+   <input name="username" placeholder="Username" required><input name="password" type="password" minlength="10" placeholder="Password (10+ chars)" required>
+   <select name="role"><option>WORKER</option><option>ADMIN</option></select><button type="submit">Create</button></form></section>
+ <section class="card"><h2 style="margin-top:0">Accounts</h2>
+  <table><thead><tr><th>Username</th><th>Role</th></tr></thead><tbody>
+   <tr th:each="u : ${accounts}"><td th:text="${u.username}"></td><td th:text="${u.role ?: 'ADMIN'}"></td></tr></tbody></table></section>
+</main></body></html>

@@ -1,0 +1,12 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Official login · HealthScape AI</title><link rel="stylesheet" th:href="@{/app.css}"></head>
+<body><nav><b>HealthScape AI</b><span><a th:href="@{/}">Public portal</a></span></nav>
+<form class="card login" method="post" th:action="@{/login}">
+  <h2 style="margin:0">Authorised community member login</h2>
+  <p class="note" style="margin:0">For registered health officials and community coordinators only.</p>
+  <p class="err" th:if="${param.error}">Invalid username or password.</p>
+  <input name="username" placeholder="Username" required autofocus autocomplete="username">
+  <input name="password" type="password" placeholder="Password" required autocomplete="current-password">
+  <button type="submit">Sign in</button>
+</form></body></html>

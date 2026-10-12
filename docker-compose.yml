@@ -1,0 +1,27 @@
+# Runs MySQL + the app together:  HS_ADMIN_PASSWORD=yourpass docker compose up --build
+services:
+  db:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: healthscape
+      MYSQL_USER: healthscape
+      MYSQL_PASSWORD: ${DB_PASSWORD:-ChangeMe_123}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-ChangeRoot_123}
+    volumes: [dbdata:/var/lib/mysql]
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      retries: 20
+  app:
+    build: .
+    depends_on:
+      db: { condition: service_healthy }
+    ports: ["8080:8080"]
+    environment:
+      DATABASE_URL: jdbc:mysql://db:3306/healthscape?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      DATABASE_USER: healthscape
+      DATABASE_PASSWORD: ${DB_PASSWORD:-ChangeMe_123}
+      HS_ADMIN_USER: ${HS_ADMIN_USER:-official}
+      HS_ADMIN_PASSWORD: ${HS_ADMIN_PASSWORD:?set HS_ADMIN_PASSWORD}
+volumes:
+  dbdata:

@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><link rel="stylesheet" th:href="@{/app.css}"><title>Dashboard · HealthScape AI</title></head><body>
+<div th:replace="~{fragments :: nav}"></div>
+<div class="hero"><h1>Dashboard</h1><p>Areas with no fresh data show as Unknown and never trigger alerts. Update verified local observations below; every change is audit-logged.</p></div>
+<main>
+ <section class="stats">
+  <div class="card stat"><b class="Low" th:text="${low}">0</b>Low</div><div class="card stat"><b class="Medium" th:text="${medium}">0</b>Medium</div>
+  <div class="card stat"><b class="High" th:text="${high}">0</b>High</div></section>
+ <p class="note">Areas awaiting fresh data: <b th:text="${unknown}">0</b></p>
+ <section class="card" style="overflow-x:auto"><table><thead><tr><th>Area</th><th>Zone</th><th>Risk</th><th>Cases · Water % · Sanitation % · Population</th></tr></thead><tbody>
+  <tr th:each="v : ${villages}"><td th:text="${v.name}"></td><td th:text="${v.zone}"></td>
+   <td><span th:class="'badge ' + ${v.level}" th:text="${v.level == 'Unknown' ? 'No data' : v.level + ' ' + v.score}"></span></td>
+   <td><form class="inl" method="post" th:action="@{/official/update}"><input type="hidden" name="id" th:value="${v.id}">
+    <input name="caseCount" type="number" min="0" step="any" th:value="${v.cases}" required>
+    <input name="waterQuality" type="number" min="0" max="100" step="any" th:value="${v.waterQuality}" required>
+    <input name="sanitation" type="number" min="0" max="100" step="any" th:value="${v.sanitation}" required>
+    <input name="population" type="number" min="1" step="any" value="40000" required><button type="submit">Save</button></form></td></tr></tbody></table></section>
+</main></body></html>

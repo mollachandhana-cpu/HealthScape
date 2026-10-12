@@ -1,0 +1,13 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "java",
+      "name": "HealthScape AI (Spring Boot)",
+      "request": "launch",
+      "mainClass": "com.healthscapeai.HealthScapeApplication",
+      "projectName": "healthscapeai-fullstack",
+      "envFile": "${workspaceFolder}/.env"
+    }
+  ]
+}

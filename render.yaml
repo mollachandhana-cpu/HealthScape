@@ -1,0 +1,19 @@
+services:
+  - type: web
+    name: healthscapeai
+    runtime: docker
+    plan: free
+    healthCheckPath: /actuator/health
+    envVars:
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_USER
+        sync: false
+      - key: DATABASE_PASSWORD
+        sync: false
+      - key: DDL_AUTO
+        value: update
+      - key: HS_ADMIN_USER
+        sync: false
+      - key: HS_ADMIN_PASSWORD
+        sync: false

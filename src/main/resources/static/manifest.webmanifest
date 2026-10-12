@@ -1,0 +1,14 @@
+{
+  "id": "/",
+  "name": "HealthScapeAI — Environmental Health Intelligence",
+  "short_name": "HealthScapeAI",
+  "description": "Understand local environmental conditions and practical precautions.",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#071a2b",
+  "theme_color": "#071a2b",
+  "categories": ["health", "weather", "education"],
+  "icons": [{"src": "/icons/healthscape.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable"}]
+}

@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Response centre · HealthScape AI</title><link rel="stylesheet" th:href="@{/app.css}"></head>
+<body>
+<nav><b>HealthScape AI · Response</b><span><a th:href="@{/official}">Dashboard</a><a th:if="${isAdmin}" th:href="@{/admin/users}">Users</a><a th:href="@{/}">Public portal</a>
+<form method="post" th:action="@{/logout}" style="display:inline"><button type="submit">Log out</button></form></span></nav>
+<div class="hero"><h1>Alerts and field observations</h1><p>Alerts open automatically when an area reaches High risk. Move each one through the response steps with a reason.</p></div>
+<main>
+ <div class="flash" th:if="${msg}" th:text="${msg}"></div>
+ <section class="card"><h2 style="margin-top:0">Alerts</h2>
+  <p th:if="${alerts.isEmpty()}">No alerts yet. They appear when an area reaches High risk.</p>
+  <div th:each="v : ${alerts}" style="border-top:1px solid var(--line);padding:12px 0">
+   <b th:text="${v.a.villageName}"></b> <span class="badge High" th:text="${v.a.status}"></span>
+   <span class="note" th:text="${' · assigned: ' + (v.a.assignee ?: 'nobody')}"></span>
+   <div th:text="${v.a.summary}"></div>
+   <div class="hist" th:each="e : ${v.events}" th:text="${e.at + ' · ' + e.status + ' · ' + e.actor + ' · ' + e.reason}"></div>
+   <form class="row" th:if="${v.next != null}" method="post" th:action="@{/official/alerts/{id}/status(id=${v.a.id})}">
+    <input type="hidden" name="to" th:value="${v.next}"><input name="reason" maxlength="400" placeholder="Reason / note" required>
+    <button type="submit" th:text="${'Move to ' + v.next}"></button></form>
+   <form class="row" th:if="${isAdmin}" method="post" th:action="@{/official/alerts/{id}/assign(id=${v.a.id})}">
+    <select name="assignee"><option th:each="p : ${people}" th:value="${p}" th:text="${p}"></option></select><button type="submit">Assign</button></form>
+  </div></section>
+ <section class="card"><h2 style="margin-top:0">Submit field observation</h2>
+  <form class="row" method="post" th:action="@{/official/observations}">
+   <select name="villageId"><option th:each="o : ${opts}" th:value="${o.id}" th:text="${o.name}"></option></select>
+   <select name="type"><option th:each="t : ${types}" th:text="${t}"></option></select>
+   <select name="severity"><option>Low</option><option>Moderate</option><option>High</option></select>
+   <input name="note" maxlength="500" placeholder="What did you observe? (no personal details)"><button type="submit">Submit</button></form>
+  <table style="margin-top:12px"><thead><tr><th>Area</th><th>Type</th><th>Level</th><th>Note</th><th>By</th><th>When</th></tr></thead><tbody>
+   <tr th:each="o : ${observations}"><td th:text="${o.villageName}"></td><td th:text="${o.type}"></td><td th:text="${o.severity}"></td>
+    <td th:text="${o.note}"></td><td th:text="${o.author}"></td><td th:text="${o.createdAt}"></td></tr></tbody></table>
+  <p class="note">Field observations are recorded as evidence. They do not change the risk score yet.</p></section>
+</main></body></html>
