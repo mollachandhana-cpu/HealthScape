@@ -11,7 +11,17 @@ import java.util.*;
 /** Retrieves model-based environmental conditions from Open-Meteo. Values are forecasts/model estimates, not ground sensors. */
 @Service
 public class EnvironmentalIntelligenceService {
-    private final RestClient http = RestClient.builder().build();
+    private final RestClient http = RestClient.builder()
+            .requestFactory(timeouts())
+            .defaultHeader("User-Agent", "HealthScapeAI/1.0")
+            .build();
+
+    private static org.springframework.http.client.SimpleClientHttpRequestFactory timeouts() {
+        var f = new org.springframework.http.client.SimpleClientHttpRequestFactory();
+        f.setConnectTimeout(java.time.Duration.ofSeconds(5));
+        f.setReadTimeout(java.time.Duration.ofSeconds(10));
+        return f;
+    }
 
     public List<Map<String, Object>> searchLocations(String query) {
         String q = query == null ? "" : query.trim();
