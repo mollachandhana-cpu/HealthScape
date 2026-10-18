@@ -39,7 +39,9 @@ public class EnvironmentalApiController {
         } catch (IllegalArgumentException e) { return ResponseEntity.badRequest().body(Map.of("error", e.getMessage())); }
         catch (Exception e) {
             log.error("Open-Meteo request failed for lat={} lon={}", lat, lon, e);
-            return ResponseEntity.status(502).body(Map.of("error", "Live environmental data is temporarily unavailable. Please retry shortly."));
+            // TEMPORARY DIAGNOSTIC: remove "detail" once the problem is fixed.
+            return ResponseEntity.status(502).body(Map.of("error", "Live environmental data is temporarily unavailable. Please retry shortly.",
+                    "detail", e.getClass().getName() + ": " + String.valueOf(e.getMessage())));
         }
     }
 

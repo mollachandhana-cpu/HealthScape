@@ -1,214 +1,181 @@
-# 🌍 HealthScapeAI
-### AI-Powered Environmental & Public Health Intelligence
+# HealthScapeAI — Environmental Health Intelligence
 
-<p align="center">
-  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=600&size=22&pause=1000&color=22C55E&center=true&vCenter=true&width=700&lines=Understand+your+environment.;Discover+local+health+risks.;Turn+environmental+data+into+action.;Building+healthier%2C+smarter+communities." alt="HealthScapeAI animated introduction" />
-</p>
+HealthScapeAI is a full-stack environmental-awareness platform that translates live modelled air-quality and weather data into explainable exposure insights. It is built on the existing Spring Boot + Thymeleaf + TiDB/MySQL application and retains the community locality, field observation, role-based official workspace, alert lifecycle, and audit-trail modules.
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Java-21-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white" alt="Java 21"/>
-  <img src="https://img.shields.io/badge/Spring%20Boot-3.4.4-6DB33F?style=for-the-badge&logo=springboot&logoColor=white" alt="Spring Boot"/>
-  <img src="https://img.shields.io/badge/Maven-Build-C71A36?style=for-the-badge&logo=apachemaven&logoColor=white" alt="Maven"/>
-  <img src="https://img.shields.io/badge/AI-Environmental%20Intelligence-7C3AED?style=for-the-badge" alt="AI environmental intelligence"/>
-</p>
+> **Safety and data integrity:** Environmental values come from Open-Meteo weather models and CAMS air-quality forecasts; they are not guaranteed to be readings from the nearest regulatory monitor. The insight rules are educational heuristics, not clinically validated risk predictions, medical advice, outbreak detection, or official warnings. Use local public-health and emergency guidance for decisions.
 
-<p align="center">
-  <b>🌱 Know your area. Understand the risk. Know what to do.</b>
-</p>
+## What's new in this upgrade
 
-<p align="center">
-  An environmental intelligence platform designed to help communities explore local conditions, understand potential environmental risks, and make more informed decisions.
-</p>
+- Redesigned responsive product dashboard plus dedicated Air Quality, Climate Risk, and Data & Methodology pages with shared navigation and a consistent visual system.
+- Live geocoding via Open-Meteo; current weather/air-quality conditions and 24-hour hourly series via Open-Meteo APIs.
+- Expanded environmental dimensions: US/EU AQI, PM2.5, PM10, ozone, NO₂, SO₂, CO, dust, pollen where available, heat/apparent temperature, humidity, UV, rain probability, precipitation, wind gusts, visibility and cloud cover.
+- Explainable rule-based signals for pollution, heat, UV, warm/humid conditions, heavy-rain planning, strong wind, low visibility, dust and elevated modelled CO. Missing values are labelled unavailable rather than replaced with zero.
+- A field-operations entry point links the existing protected community observation, sanitation/water concern and alert workflows; these are operational records, not represented as a live sensor feed.
+- Optional Google Gemini-generated plain-language briefing. The app works without an API key and shows a transparent fallback when Gemini is not configured.
+- Each successful environmental refresh is saved to the configured SQL database in `environmental_snapshots`; a history endpoint exposes recent saved observations for the selected area.
+- Health endpoint for deploy checks, Maven tests, Docker build, Render blueprint, and documented configuration.
+- The original official/field-work workflows remain in the project; the public homepage is now the environmental intelligence product.
 
----
+## Technology
 
-## ✨ The Vision
+- Java 21, Spring Boot 3.4.4, Spring MVC, Spring Data JPA, Spring Security, Thymeleaf, Actuator
+- TiDB Cloud (MySQL-compatible) or MySQL 8 for persistence
+- Open-Meteo Geocoding, Forecast and Air Quality APIs (no API key required for supported non-commercial use)
+- Leaflet + OpenStreetMap for map rendering
+- Optional Google Gemini REST API for generated environmental explanations
+- Maven, Docker, Render-compatible deployment configuration
 
-Environmental information is often scattered across multiple sources. HealthScapeAI brings environmental data, area-level insights, risk assessment, and actionable guidance together in one experience.
+## Run locally on macOS / VS Code with TiDB Cloud
 
-Our goal is to make environmental intelligence more **understandable, accessible, transparent, and actionable**.
+### 1. Create or confirm the TiDB database
 
-> 🌿 From environmental data to meaningful community action.
+In TiDB Cloud SQL Editor, create the application database if needed:
 
-## 🚀 Explore the Platform
-
-| Feature | What it offers |
-|---|---|
-| 🌦️ **Environmental Dashboard** | Explore environmental conditions and weather-related insights. |
-| 📍 **Area Intelligence** | Discover information about localities and understand their environmental context. |
-| 🧠 **AI-Assisted Briefings** | Generate concise explanations of environmental conditions when the optional AI integration is configured. |
-| ⚠️ **Risk Assessment** | Explore environmental risk indicators through the risk calculator. |
-| 🔔 **Alerts & Monitoring** | Access alert-related functionality and environmental updates. |
-| 📸 **Field Observations** | Support the recording of observations from the field. |
-| 📊 **Historical Snapshots** | Keep track of captured environmental information over time. |
-| 🛡️ **Audit & Security** | Support traceability and access control through application security and audit functionality. |
-
-## 🎯 Why HealthScapeAI?
-
-- 🌍 **Local-first perspective** — focus on environmental conditions at the area level.
-- 🧩 **Connected insights** — bring environmental information and risk indicators into one platform.
-- 🤖 **AI-assisted understanding** — make complex information easier to interpret.
-- 📈 **Data-informed decisions** — encourage users to understand the available evidence before acting.
-- 🔎 **Transparency matters** — environmental insights should be interpreted in context, not treated as guaranteed medical predictions.
-- 📱 **Designed for accessibility** — a foundation for delivering useful information to diverse communities.
-
-## 🏗️ Technology Stack
-
-<p align="center">
-  <img src="https://skillicons.dev/icons?i=java,spring,maven,mysql,git,github,docker" alt="Technology stack icons"/>
-</p>
-
-| Layer | Technology |
-|---|---|
-| Application backend | Java 21 |
-| Web framework | Spring Boot |
-| Security | Spring Security |
-| Data access | Spring Data JPA / Hibernate |
-| Database | MySQL-compatible TiDB Cloud |
-| Build system | Apache Maven |
-| Environmental data | Open-Meteo integration |
-| Optional AI integration | Gemini API |
-| Deployment foundation | Docker, Docker Compose and deployment configuration |
-| CI/CD foundation | GitHub Actions configuration |
-
-*The availability of individual integrations depends on their configuration and the corresponding environment variables or API credentials.*
-
-## 🧭 How It Works
-
-```mermaid
-flowchart TD
-    A["🌦️ Environmental Data"] --> D["HealthScapeAI"]
-    B["📍 Local Area Information"] --> D
-    C["📸 Field Observations"] --> D
-    D --> E["📊 Data Processing & Risk Indicators"]
-    E --> F["🧠 AI-Assisted Briefings"]
-    E --> G["⚠️ Alerts & Insights"]
-    E --> H["📈 Snapshots & Audit Trail"]
-    F --> I["🌍 Informed Community Decisions"]
-    G --> I
-    H --> I
-
-    style D fill:#166534,color:#ffffff,stroke:#22c55e
-    style I fill:#0f766e,color:#ffffff,stroke:#5eead4
+```sql
+CREATE DATABASE IF NOT EXISTS healthscape;
 ```
 
-## ⚡ Run Locally
+Confirm the TiDB cluster's public endpoint, port (typically `4000`), username, and network allowlist. Keep the database password private. If a password was previously pasted into logs or source files, rotate it in TiDB Cloud before proceeding.
 
-### Prerequisites
+### 2. Set environment variables in the terminal
 
-- Java 21
-- Apache Maven 3.9+
-- A reachable MySQL-compatible database, such as TiDB Cloud
-- Optional AI credentials if you want to enable the AI integration
+Run from the project root (the directory containing `pom.xml`). Use the exact host and username shown in TiDB Cloud:
 
-### 1. Clone the repository
-
-```bash
-git clone https://github.com/mollachandhana-cpu/HealthScape.git
-cd HealthScape
-```
-
-### 2. Configure environment variables
-
-Configure your database settings using environment variables. Never commit your real credentials.
-
-**macOS / Linux:**
-
-```bash
-export DATABASE_URL='jdbc:mysql://YOUR_DATABASE_HOST:4000/healthscape?sslMode=VERIFY_IDENTITY'
-export DATABASE_USER='YOUR_DATABASE_USERNAME'
-
-read -s "DATABASE_PASSWORD?Enter database password: "
+```zsh
+export DATABASE_URL='jdbc:mysql://YOUR_TIDB_HOST:4000/healthscape?sslMode=VERIFY_IDENTITY'
+export DATABASE_USER='YOUR_TIDB_USERNAME'
+read -s 'DATABASE_PASSWORD?Enter your TiDB password: '
 export DATABASE_PASSWORD
 echo
+export HS_ADMIN_USER='official'
+export HS_ADMIN_PASSWORD='CHOOSE_A_LONG_UNIQUE_PASSWORD'
 ```
 
-Replace the example host and username with your actual database details.
+Optional: enable generative AI briefings with a Gemini API key from Google AI Studio. Keep it server-side and never place it in frontend JavaScript or commit it:
 
-If the optional Gemini integration is enabled, configure its API key using the exact environment variable expected by your application.
-
-### 3. Build the project
-
-```bash
-mvn clean package
+```zsh
+export GEMINI_API_KEY='YOUR_GEMINI_API_KEY'
+export GEMINI_MODEL='gemini-2.5-flash'
 ```
 
-### 4. Start the application
+The Gemini key is optional. Without it, the dashboard's rule-based explainable insights still work. API availability and model access depend on your provider account and quotas.
+
+The `DATABASE_URL` must be a JDBC URL beginning with `jdbc:mysql://`. Do not use the URI-style `mysql://user:password@host/...` connection string in Spring datasource configuration. Username and password are separate variables.
+
+### 3. Start the app
+
+Requires Java 21+ and Maven 3.9+:
 
 ```bash
+java -version
+mvn -version
 mvn spring-boot:run
 ```
 
-Open the application in your browser:
+Open <http://localhost:8080>. Keep the terminal session open. Environment variables set in a terminal apply only to that session; re-export them in any new terminal.
 
-**http://localhost:8080**
+The first load calls Open-Meteo. If the external API is unavailable, the app shows an error instead of silently presenting sample values as live data. Search a city, select one of the quick locations, or use browser geolocation on localhost/HTTPS.
 
-If the application uses additional required environment variables, configure them before starting it.
+## API routes
 
-## 🐳 Deployment
+| Method | Route | Purpose |
+|---|---|---|
+| GET | `/api/environment?lat=17.385&lon=78.4867&place=Hyderabad` | Live modelled weather + air quality, hourly series and explainable insights; saves a SQL snapshot |
+| GET | `/api/environment/search?q=Hyderabad` | Location geocoding |
+| GET | `/air-quality` | Dedicated pollutant and air-quality view |
+| GET | `/climate-risk` | Dedicated heat, UV, rainfall, wind and visibility view |
+| GET | `/data-methodology` | Data provenance, model limitations and responsible-use notes |
+| GET | `/api/environment/history?lat=17.385&lon=78.4867` | Recent saved snapshots near the selected coordinates |
+| POST | `/api/environment/ai-brief` | Optional Gemini-generated briefing; deterministic insights remain available without a key |
+| GET | `/api/villages` | Existing community locality data |
+| POST | `/api/predict` | Existing rule-based risk calculator |
+| GET | `/actuator/health` | Application health check for deployment |
 
-HealthScapeAI includes deployment-related configuration intended to support containerized builds and deployment workflows.
+The public `/api/environment` endpoint accepts latitude from -90 to 90 and longitude from -180 to 180. The AI endpoint is optional and should be protected with provider quota limits and deployment-level rate limiting before exposing a configured paid API key to a broad audience.
 
-Example local Docker workflow, if Docker is installed:
+## Database notes
+
+- Existing entities and workflows are retained. Hibernate's configured `DDL_AUTO` defaults to `update`, which creates the new `environmental_snapshots` table automatically in development.
+- For a production database, prefer reviewed schema migrations (Flyway/Liquibase) over relying indefinitely on automatic DDL changes. Back up data before changing schema policy.
+- `environmental_snapshots` stores coordinates, location label, modelled AQI/pollutant/weather values and capture timestamp. It is not a substitute for an official sensor archive.
+- If the DB is unavailable, application startup or snapshot requests may fail. Confirm TiDB network allowlisting and TLS connection instructions before debugging application code.
+
+## Test and package
 
 ```bash
-docker build -t healthscapeai:local .
-docker run --rm -p 8080:8080 \
-  -e DATABASE_URL="$DATABASE_URL" \
-  -e DATABASE_USER="$DATABASE_USER" \
-  -e DATABASE_PASSWORD="$DATABASE_PASSWORD" \
-  healthscapeai:local
+mvn test
+mvn clean package
 ```
 
-You can also configure a remote CI/CD workflow to build and publish a container image without installing Docker on your development machine.
+Tests cover the existing risk scoring expectations and the environmental snapshot data object. Live external API calls are intentionally not required for unit tests. Before a real production release, add provider-contract/integration tests using stubbed HTTP responses, migration tests, authentication/authorization tests, rate limiting, and end-to-end browser tests.
 
-**Before deploying publicly:** configure production secrets, restrict database access, verify health checks, test database migrations, and confirm that the deployed application behaves correctly.
+## Docker
 
-## 🔐 Security & Responsible Use
+For a local Docker Compose run, copy `.env.example` to `.env`, set unique values, then run:
 
-HealthScapeAI is intended to support environmental awareness and informed decision-making.
+```bash
+docker compose up --build
+```
 
-- Never commit `.env` files, database passwords, or API keys.
-- Store production credentials in your hosting platform's secret manager.
-- Use HTTPS and appropriately restricted database access in production.
-- Validate external data and handle API failures gracefully.
-- Clearly communicate missing, stale, or uncertain data.
-- Treat environmental risk indicators as informational, not as medical diagnoses.
-- Test authentication, authorization, and input validation before public deployment.
+The compose file starts a local MySQL service and the application. This is optional; your existing TiDB Cloud workflow does not require Docker. Never commit `.env`.
 
-## 🗺️ Roadmap
+## Deploy to Render with TiDB Cloud
 
-- [x] Environmental dashboard foundation
-- [x] Area intelligence and risk assessment foundation
-- [x] Environmental data integration
-- [x] AI-assisted briefing integration
-- [x] Alerts, observations, and snapshots foundation
-- [ ] Automated build and test pipeline
-- [ ] Remote container build and deployment
-- [ ] Comprehensive integration and security testing
-- [ ] Improved multilingual and low-bandwidth experiences
-- [ ] Expanded environmental data validation and freshness indicators
+1. Push the project to a private or public Git repository (do not include `.env`, credentials, logs, or API keys).
+2. Create a Render Blueprint from the repository; `render.yaml` describes the Docker web service and `/actuator/health` health check.
+3. In Render's environment settings, set `DATABASE_URL`, `DATABASE_USER`, `DATABASE_PASSWORD`, `HS_ADMIN_USER`, and `HS_ADMIN_PASSWORD`. `DATABASE_URL` must use the JDBC URL and TLS options provided for your TiDB cluster.
+4. Optionally set `GEMINI_API_KEY` and `GEMINI_MODEL` to enable generated briefings.
+5. Ensure the TiDB endpoint permits connections from the deployment environment and follow TiDB's current TLS/network guidance. Do not weaken TLS as a workaround.
+6. Deploy, wait for the health check, and verify the dashboard plus `/api/environment` and `/actuator/health`.
 
-*Roadmap items describe development goals; production readiness depends on testing and deployment verification.*
+Free hosting instances may sleep, and external APIs/database connections may have quotas or network restrictions. Validate current provider terms and limits before public/commercial use.
 
-## 🤝 Contributing
+## Attribution and external services
 
-Ideas, improvements, bug reports, and thoughtful feedback are welcome.
+- Open-Meteo weather and geocoding: <https://open-meteo.com/>; weather forecasts: <https://open-meteo.com/en/docs>; air quality: <https://open-meteo.com/en/docs/air-quality-api>.
+- Map tiles and map data: © OpenStreetMap contributors, <https://www.openstreetmap.org/copyright>; Leaflet: <https://leafletjs.com/>.
+- Optional generative explanations: Google Gemini API, <https://ai.google.dev/api>.
 
-1. Fork the repository.
-2. Create a feature branch.
-3. Make your changes and test them.
-4. Open a pull request describing the improvement.
+## Project layout
 
-## 👩‍💻 Built With Purpose
+- `src/main/java/com/healthscapeai/EnvironmentalIntelligenceService.java` — live data aggregation and transparent environmental rules.
+- `EnvironmentalApiController.java` — public environmental API and snapshot history.
+- `EnvironmentalSnapshot.java` / `EnvironmentalSnapshotRepository.java` — SQL persistence for fetched observations.
+- `AiBriefService.java` — optional Gemini API integration.
+- `src/main/resources/templates/index.html` — dashboard layout.
+- `src/main/resources/static/css/app.css` — responsive visual system.
+- `src/main/resources/static/js/app.js` — dashboard interactions, map, charts, search and AI briefing.
+- Existing official workflows, alerts, audit trail and risk calculator remain in their original classes/templates.
 
-**HealthScapeAI — Environmental Intelligence for Healthier Communities.**
+## Current limitations (documented, not hidden)
 
-<p align="center">
-  <img src="https://img.shields.io/badge/Built%20with-💚%20Purpose-16a34a?style=for-the-badge" alt="Built with purpose"/>
-  <img src="https://img.shields.io/badge/Open%20Source%20Project-Explore%20the%20Code-2563eb?style=for-the-badge" alt="Explore the code"/>
-</p>
+- AQI/pollutants are model estimates from provider grids and can differ from nearby stations.
+- Current insight thresholds are explainable heuristic triggers, not a validated clinical/public-health model.
+- The 24-hour graph displays forecast values. The SQL history count grows only as users refresh the selected locations; it is not historical coverage before the app was used.
+- Gemini is optional; no model-generated text is claimed unless a server-side API key is configured and a successful response is received.
+- Production readiness still requires deployment-specific secrets, schema migrations, provider quotas/rate limiting, operational monitoring, security review and integration/end-to-end tests.
 
-<p align="center">
-  <i>Better awareness. Better decisions. Healthier communities. 🌎</i>
-</p>
+## Area Intelligence public experience
+
+The `/area-intelligence` page provides a public, locality-level briefing with:
+- Area selection from the seeded locality registry
+- A visible distinction between recent area updates and stale/unverified records
+- Rule-based risk contributors and precautions only when the area record is considered fresh
+- An evidence register for AQI, rainfall, water-quality score, sanitation score and aggregated health-report count
+- Recent field observations and unresolved response-item counts
+- Separate next-step guidance for residents and operational review for authorized officers
+
+**Important limitations:** the existing risk score is a demonstration heuristic, not a clinically validated disease forecast. Seeded area values are not live observations. The UI deliberately labels stale records as not assessed and explains that recorded values need verification. No SMS provider, validated disease-specific ML model, automated outbreak detection, or full Telugu translation is claimed by this page. Those require provider credentials, suitable historical data, evaluation and further implementation.
+
+## Progressive Web App (PWA) and offline behavior
+
+The dashboard can be installed as a web app on supported browsers when served from `localhost` or HTTPS. The service worker caches the static application shell and shows a clear offline page when navigation cannot reach the server. It deliberately does **not** cache `/api/**` responses, so stale air-quality or weather readings are never presented as current. Dynamic environmental data still requires a working network and backend.
+
+To test locally:
+
+1. Start the app with the environment variables configured as described above.
+2. Open `http://localhost:8080` in a supported browser.
+3. Open Developer Tools → Application → Manifest / Service Workers to inspect registration.
+4. Use the browser's install option if available. To test the offline page, load the dashboard once, switch the browser to offline mode, and navigate/reload. API data should remain unavailable rather than being misrepresented as live.
+
+After changing cached CSS or JavaScript, increment the `CACHE` version in `src/main/resources/static/sw.js` so clients refresh their application shell.
