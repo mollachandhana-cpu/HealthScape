@@ -37,11 +37,13 @@ public class EnvironmentalApiController {
             }
             return ResponseEntity.ok(result);
         } catch (IllegalArgumentException e) { return ResponseEntity.badRequest().body(Map.of("error", e.getMessage())); }
+        catch (org.springframework.web.client.HttpClientErrorException.TooManyRequests e) {
+            log.warn("Open-Meteo rate limit reached: {}", e.getMessage());
+            return ResponseEntity.status(503).body(Map.of("error", "The free weather data provider has reached its daily request limit. It resets daily; please try again later."));
+        }
         catch (Exception e) {
             log.error("Open-Meteo request failed for lat={} lon={}", lat, lon, e);
-            // TEMPORARY DIAGNOSTIC: remove "detail" once the problem is fixed.
-            return ResponseEntity.status(502).body(Map.of("error", "Live environmental data is temporarily unavailable. Please retry shortly.",
-                    "detail", e.getClass().getName() + ": " + String.valueOf(e.getMessage())));
+            return ResponseEntity.status(502).body(Map.of("error", "Live environmental data is temporarily unavailable. Please retry shortly."));
         }
     }
 

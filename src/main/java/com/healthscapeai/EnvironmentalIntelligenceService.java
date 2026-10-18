@@ -26,7 +26,7 @@ public class EnvironmentalIntelligenceService {
     public List<Map<String, Object>> searchLocations(String query) {
         String q = query == null ? "" : query.trim();
         if (q.length() < 2 || q.length() > 100) return List.of();
-        JsonNode root = http.get().uri(UriComponentsBuilder.fromUriString("https://geocoding-api.open-meteo.com/v1/search")
+        JsonNode root = http.get().uri(keyed(UriComponentsBuilder.fromUriString(host("geocoding-api.open-meteo.com","customer-geocoding-api.open-meteo.com") + "/v1/search"))
                 .queryParam("name", q).queryParam("count", 8).queryParam("language", "en").queryParam("format", "json").build().encode().toUri())
                 .retrieve().body(JsonNode.class);
         List<Map<String, Object>> out = new ArrayList<>();
@@ -41,16 +41,50 @@ public class EnvironmentalIntelligenceService {
         return out;
     }
 
+    // ---- Caching: one upstream fetch per ~0.01° grid cell per 15 minutes, to stay inside Open-Meteo's free limits.
+    private static final long FRESH_MS = 15 * 60_000L, STALE_OK_MS = 6 * 3_600_000L;
+    private record Cached(Map<String, Object> data, long at) {}
+    private final java.util.concurrent.ConcurrentHashMap<String, Cached> cache = new java.util.concurrent.ConcurrentHashMap<>();
+    private final String apiKey = System.getenv().getOrDefault("OPEN_METEO_API_KEY", "").trim();
+    private String host(String free, String paid) { return "https://" + (apiKey.isEmpty() ? free : paid); }
+    private UriComponentsBuilder keyed(UriComponentsBuilder b) { return apiKey.isEmpty() ? b : b.queryParam("apikey", apiKey); }
+
     public Map<String, Object> getIntelligence(double latitude, double longitude, String place) {
         if (!Double.isFinite(latitude) || !Double.isFinite(longitude) || latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180)
             throw new IllegalArgumentException("Latitude must be -90..90 and longitude -180..180.");
-        JsonNode weather = http.get().uri(UriComponentsBuilder.fromUriString("https://api.open-meteo.com/v1/forecast")
+        String key = String.format(java.util.Locale.ROOT, "%.2f,%.2f", latitude, longitude);
+        long now = System.currentTimeMillis();
+        Cached hit = cache.get(key);
+        if (hit != null && now - hit.at() < FRESH_MS) return withPlace(hit.data(), place, false);
+        try {
+            Map<String, Object> fresh = fetchIntelligence(latitude, longitude, place);
+            cache.put(key, new Cached(fresh, now));
+            if (cache.size() > 500) cache.entrySet().removeIf(e -> now - e.getValue().at() > STALE_OK_MS);
+            return fresh;
+        } catch (RuntimeException e) {
+            // Serve the last good (stale) reading rather than a blank dashboard, clearly marked as such.
+            if (hit != null && now - hit.at() < STALE_OK_MS) return withPlace(hit.data(), place, true);
+            throw e;
+        }
+    }
+
+    private Map<String, Object> withPlace(Map<String, Object> data, String place, boolean stale) {
+        Map<String, Object> copy = new LinkedHashMap<>(data);
+        copy.put("place", place == null || place.isBlank() ? "Selected location" : place.trim());
+        if (stale) copy.put("stale", true);
+        return copy;
+    }
+
+    private Map<String, Object> fetchIntelligence(double latitude, double longitude, String place) {
+        if (!Double.isFinite(latitude) || !Double.isFinite(longitude) || latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180)
+            throw new IllegalArgumentException("Latitude must be -90..90 and longitude -180..180.");
+        JsonNode weather = http.get().uri(keyed(UriComponentsBuilder.fromUriString(host("api.open-meteo.com","customer-api.open-meteo.com") + "/v1/forecast"))
                 .queryParam("latitude", latitude).queryParam("longitude", longitude)
                 .queryParam("current", "temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,wind_speed_10m,wind_gusts_10m,uv_index,visibility,cloud_cover")
                 .queryParam("hourly", "temperature_2m,relative_humidity_2m,precipitation_probability,precipitation,uv_index,wind_speed_10m,wind_gusts_10m,visibility,cloud_cover")
                 .queryParam("forecast_days", 2).queryParam("timezone", "auto").build().encode().toUri())
                 .retrieve().body(JsonNode.class);
-        JsonNode air = http.get().uri(UriComponentsBuilder.fromUriString("https://air-quality-api.open-meteo.com/v1/air-quality")
+        JsonNode air = http.get().uri(keyed(UriComponentsBuilder.fromUriString(host("air-quality-api.open-meteo.com","customer-air-quality-api.open-meteo.com") + "/v1/air-quality"))
                 .queryParam("latitude", latitude).queryParam("longitude", longitude)
                 .queryParam("current", "us_aqi,european_aqi,pm10,pm2_5,ozone,nitrogen_dioxide,sulphur_dioxide,carbon_monoxide,dust,grass_pollen,birch_pollen,ragweed_pollen")
                 .queryParam("hourly", "us_aqi,pm2_5,pm10,ozone,nitrogen_dioxide,carbon_monoxide,dust,grass_pollen,birch_pollen,ragweed_pollen").queryParam("forecast_days", 2)

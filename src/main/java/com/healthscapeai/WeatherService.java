@@ -13,21 +13,26 @@ import java.util.stream.Collectors;
 @Service
 public class WeatherService {
     private static final Logger log = LoggerFactory.getLogger(WeatherService.class);
-    private final RestClient http = RestClient.create();
+    private final RestClient http = RestClient.builder().requestFactory(timeouts()).build();
+    private final String apiKey = System.getenv().getOrDefault("OPEN_METEO_API_KEY", "").trim();
+    private static org.springframework.http.client.SimpleClientHttpRequestFactory timeouts() {
+        var f = new org.springframework.http.client.SimpleClientHttpRequestFactory();
+        f.setConnectTimeout(java.time.Duration.ofSeconds(5)); f.setReadTimeout(java.time.Duration.ofSeconds(15)); return f;
+    }
     private final VillageRepository repo;
     public WeatherService(VillageRepository repo) { this.repo = repo; }
 
-    @Scheduled(initialDelay = 5000, fixedRate = 1800000)
+    @Scheduled(initialDelay = 5000, fixedRate = 21600000)
     public void refresh() {
         var list = repo.findAll();
         if (list.isEmpty()) return;
         String q = "latitude=" + list.stream().map(v -> String.valueOf(v.latitude)).collect(Collectors.joining(","))
                  + "&longitude=" + list.stream().map(v -> String.valueOf(v.longitude)).collect(Collectors.joining(","));
         try {
-            JsonNode w = http.get().uri(URI.create("https://api.open-meteo.com/v1/forecast?" + q
-                    + "&current=temperature_2m,relative_humidity_2m,precipitation&timezone=auto")).retrieve().body(JsonNode.class);
-            JsonNode a = http.get().uri(URI.create("https://air-quality-api.open-meteo.com/v1/air-quality?" + q
-                    + "&current=us_aqi")).retrieve().body(JsonNode.class);
+            JsonNode w = http.get().uri(URI.create((apiKey.isEmpty() ? "https://api.open-meteo.com" : "https://customer-api.open-meteo.com") + "/v1/forecast?" + q
+                    + "&current=temperature_2m,relative_humidity_2m,precipitation&timezone=auto" + (apiKey.isEmpty() ? "" : "&apikey=" + apiKey))).retrieve().body(JsonNode.class);
+            JsonNode a = http.get().uri(URI.create((apiKey.isEmpty() ? "https://air-quality-api.open-meteo.com" : "https://customer-air-quality-api.open-meteo.com") + "/v1/air-quality?" + q
+                    + "&current=us_aqi" + (apiKey.isEmpty() ? "" : "&apikey=" + apiKey))).retrieve().body(JsonNode.class);
             for (int i = 0; i < list.size(); i++) {
                 var v = list.get(i); JsonNode c = w.get(i).get("current"), ac = a.get(i).get("current");
                 v.temperature = c.get("temperature_2m").asDouble(v.temperature);
