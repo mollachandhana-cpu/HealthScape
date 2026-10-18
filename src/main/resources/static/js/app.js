@@ -80,7 +80,7 @@
     track.style.animationDuration=`${Math.max(25,tips.join('').length*.11)}s`;
   }
   function render(data) {
-    state.data=data; const c=data.current||{}; const [label,klass,caption]=aqiBand(Number(c.usAqi));
+    state.data=data; const dsn=document.getElementById('data-source-name'); if(dsn&&data.provider)dsn.textContent=String(data.provider).split(' · ')[0].toUpperCase(); const c=data.current||{}; const [label,klass,caption]=aqiBand(Number(c.usAqi));
     setText('aqi-value',fmt(c.usAqi));setText('aqi-label',label);$('aqi-label').className=`status-tag ${klass}`;setText('aqi-caption',caption);
     $('aqi-marker').style.left=`${Math.max(0,Math.min(100,Number(c.usAqi)/500*100))}%`;
     setText('pm25-value',fmt(c.pm25,1));$('pm10-value').innerHTML=`${safe(fmt(c.pm10,1))} <small>µg/m³</small>`;setText('temperature-value',fmt(c.temperature,1));setText('feels-like',`Feels like ${fmt(c.feelsLike,1)}°`);setText('humidity-value',fmt(c.humidity));setText('uv-value',fmt(c.uvIndex,1));setText('uv-tag',uvBand(Number(c.uvIndex)));$('uv-fill').style.left=`${Math.max(0,Math.min(100,Number(c.uvIndex)/11*100))}%`;setText('wind-value',fmt(c.windSpeed,1));

@@ -17,3 +17,5 @@ services:
         sync: false
       - key: HS_ADMIN_PASSWORD
         sync: false
+      - key: OPENWEATHER_API_KEY
+        sync: false
